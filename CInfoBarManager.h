@@ -2,6 +2,7 @@
 
 #include "IInfoBarHost.h"
 #include "IInfoBarMessage.h"
+#include "IBrowserProgress.h"
 
 #include "CInfoBarMessageImpl.h"
 
@@ -16,13 +17,17 @@ public:
 	void InitializeSimple(LPCWSTR message);
 	void Initialize(CComObject<CInfoBarMessageImpl>* message);
 
-	void ShowInfoBar();
+	void ShowInfoBar(IShellView* shview);
 	void Close();
 
 private:
 	CComObject<CInfoBarMessageImpl>* infoMsg = NULL;
 
+	IServiceProvider* sprovider = NULL;
+	IBrowserProgressSessionProvider* sessionProvider = NULL;
+
 	IGlobalInterfaceTable* git = NULL;
+
 	IInfoBarHost* host = NULL;
 	IUnknown* browserProgress = NULL;
 };

@@ -12,6 +12,15 @@ CInfoBarManager::~CInfoBarManager()
 	if (this->infoMsg) {
 		this->infoMsg->Release();
 	}
+
+	if (this->sessionProvider) {
+		this->sessionProvider->Release();
+	}
+
+	if (this->sprovider) {
+		this->sprovider->Release();
+	}
+
 	if (this->browserProgress) {
 		this->browserProgress->Release();
 	}
@@ -41,31 +50,51 @@ void CInfoBarManager::Initialize(CComObject<CInfoBarMessageImpl>* message) {
 	}
 }
 
-void CInfoBarManager::ShowInfoBar() {
+void CInfoBarManager::ShowInfoBar(IShellView* shview) {
 	HRESULT hr;
+	DWORD dwCookie = 0;
 
-	//Get GIT
-	hr = CoCreateInstance(CLSID_StdGlobalInterfaceTable,NULL,CLSCTX_INPROC_SERVER,
-		IID_IGlobalInterfaceTable,(PVOID*)&this->git);
-
-	if (SUCCEEDED(hr)) {
-		//i dont't know how to get dwCookie From Explorer Internal.
-		//networkexplorer.dll (My Network Places) know dwCookie from Explorer Internal.
-		//In this case, brute-force dwCookie value.
-		for (DWORD i = 0; i < MAXDWORD; i++) {
-			hr = this->git->GetInterfaceFromGlobal(i, IID_IBrowserProgressConnecion, (PVOID*)&this->browserProgress);
-			if (hr == S_OK) {
-				hr = this->browserProgress->QueryInterface(IID_IInfoBarHost, (PVOID*)&this->host);
-
-				if (hr == S_OK) {
-					//Call Relase in explorer inside
-					this->infoMsg->AddRef();
-					this->host->Inform(this->infoMsg);
-				}
-				break;
-			}
+	if (!this->sprovider) {
+		hr = shview->QueryInterface(IID_IServiceProvider, (PVOID*)&sprovider);
+		if (FAILED(hr)) {
+			goto escapeArea;
 		}
 	}
+
+	if (!this->sessionProvider) {
+		hr = this->sprovider->QueryService(IID_IBrowserProgressAggregator, IID_IBrowserProgressSessionProvider, (PVOID*)&this->sessionProvider);
+		if (FAILED(hr)) {
+			goto escapeArea;
+		}
+	}
+
+	hr = sessionProvider->GetCurrentSession(&dwCookie);
+	if (FAILED(hr)) {
+		goto escapeArea;
+	}
+
+	//Get GIT
+	if (!this->git) {
+		hr = CoCreateInstance(CLSID_StdGlobalInterfaceTable, NULL, CLSCTX_INPROC_SERVER,
+			IID_IGlobalInterfaceTable, (PVOID*)&this->git);
+		if (FAILED(hr)) {
+			goto escapeArea;
+		}
+	}
+
+	hr = this->git->GetInterfaceFromGlobal(dwCookie, IID_IBrowserProgressConnecion, (PVOID*)&this->browserProgress);
+	if (hr == S_OK) {
+		hr = this->browserProgress->QueryInterface(IID_IInfoBarHost, (PVOID*)&this->host);
+		if (hr == S_OK) {
+			//Call Relase in explorer inside
+			this->infoMsg->AddRef();
+			this->host->Inform(this->infoMsg);
+		}
+	}
+
+escapeArea:
+
+	return;
 }
 
 void CInfoBarManager::Close() {
