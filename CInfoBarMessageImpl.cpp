@@ -19,12 +19,39 @@ HRESULT STDMETHODCALLTYPE CInfoBarMessageImpl::GetMessageW(LPWSTR* message) {
 	return S_OK;
 }
 
-HRESULT STDMETHODCALLTYPE CInfoBarMessageImpl::CreateMenu(HMENU* pMwnu) {
-	return E_NOTIMPL;
+HRESULT STDMETHODCALLTYPE CInfoBarMessageImpl::CreateMenu(HMENU* pMenu) {
+	HRESULT hr = S_OK;
+
+	MENUITEMINFOW menuItem = {sizeof(MENUITEMINFOW),0,};
+	HMENU hMenu = CreatePopupMenu();
+
+	//4'rd parameter is menuId (uIDNewItem)
+	InsertMenuW(hMenu, 0, MF_BYPOSITION | MF_STRING, 1, L"Menu 1"); 
+	InsertMenuW(hMenu, 1, MF_BYPOSITION | MF_STRING, 2, L"Menu 2");
+	menuItem.fType = MFT_SEPARATOR;
+	menuItem.fMask = MIIM_TYPE;
+	InsertMenuItemW(hMenu, 2, TRUE, &menuItem);
+	InsertMenuW(hMenu, 3, MF_BYPOSITION | MF_STRING, 3, L"Menu 3");
+
+	*pMenu = hMenu;
+escapeArea:
+	return hr;
 }
 
-HRESULT STDMETHODCALLTYPE CInfoBarMessageImpl::HandleMenu(HWND hwnd, int intVal) {
-	return E_NOTIMPL;
+HRESULT STDMETHODCALLTYPE CInfoBarMessageImpl::HandleMenu(HWND hwnd, INT menuId) {
+	switch (menuId) {
+		case 1: {
+			MessageBoxW(hwnd, L"Menu1", L" NSE Information Bar", 0);
+		}; break;
+		case 2: {
+			MessageBoxW(hwnd, L"Menu2", L" NSE Information Bar", 0);
+		}; break;
+		case 3: {
+			MessageBoxW(hwnd, L"Menu3", L" NSE Information Bar", 0);
+		}; break;
+	}
+
+	return S_OK;
 }
 
 GUID* CInfoBarMessageImpl::GetMessageGUID() {
