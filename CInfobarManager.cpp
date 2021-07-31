@@ -39,6 +39,7 @@ void CInfoBarManager::InitializeSimple(LPCWSTR message) {
 	if (message) {
 		hr = CComObject<CInfoBarMessageImpl>::CreateInstance(&this->infoMsg);
 		if (hr == S_OK) {
+			this->infoMsg->AddRef();
 			this->infoMsg->SetMessageW(message);
 		}
 	}
@@ -86,8 +87,6 @@ void CInfoBarManager::ShowInfoBar(IShellView* shview) {
 	if (hr == S_OK) {
 		hr = this->browserProgress->QueryInterface(IID_IInfoBarHost, (PVOID*)&this->host);
 		if (hr == S_OK) {
-			//Call Relase in explorer inside
-			this->infoMsg->AddRef();
 			this->host->Inform(this->infoMsg);
 		}
 	}
